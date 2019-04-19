@@ -72,7 +72,7 @@ def train(log_dir, args):
   saver = tf.train.Saver(max_to_keep=5, keep_checkpoint_every_n_hours=2)
 
   # Train!
-  with tf.Session() as sess:+
+  with tf.Session() as sess:
     try:
       summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
       sess.run(tf.global_variables_initializer())
