@@ -9,6 +9,7 @@ from tqdm import tqdm
 from glob import glob
 from pydub import silence
 from pydub import AudioSegment
+from pydub.silence import split_on_silence
 from functools import partial
 
 from hparams import hparams
@@ -82,14 +83,21 @@ def read_audio(audio_path):
 def split_on_silence_with_pydub(
         audio_path, skip_idx=0, out_ext="wav",
         silence_thresh=-40, min_silence_len=700,
-        silence_chunk_len=100, keep_silence=100,):
+        silence_chunk_len=100, keep_silence=400,):
     
-    # keep_silence 수정!
+    #  keep_silence - (in ms) amount of silence to leave at the beginning
+    #  and end of the chunks. Keeps the sound from sounding like it is
+    #  abruptly cut off. (default: 100ms)
+    #  분리된 오디오 앞 뒤로 공백 추가
+
+    # silence_thresh - (in dBFS) anything quieter than this will be
+    # considered silence. default: -16dBFS
 
     filename = os.path.basename(audio_path).split('.', 1)[0]
     in_ext = audio_path.rsplit(".")[1]
 
     audio = read_audio(audio_path)
+    print(audio)
     not_silence_ranges = silence.detect_nonsilent(
         audio, min_silence_len=silence_chunk_len,
         silence_thresh=silence_thresh)
@@ -115,16 +123,24 @@ def split_on_silence_with_pydub(
         
         segment=audio[start_idx:end_idx]
 
-        # segment 길이 최소 3초, 최대 12초 설정
         seg_duration = len(segment) / 1000.0
-        # if seg_duration <= 3.0 or seg_duration >= 12.0:
-        #    continue
-
+       
         if seg_duration >=18.0:
-            segment = segment[:18000]
             print(len(segment)/1000.0)
-            segment.export(target_audio_path, out_ext)    
-            audio_paths.append(target_audio_path)
+            seg_audio = AudioSegment.from_mono_audiosegments(segment)
+            print(seg_audio)
+            segments = split_on_silence(seg_audio, silence_thresh=-40, min_silence_len=700, keep_silence=400,)
+            print(segments)
+            for seg in segments:
+                segment = seg
+                print(len(segment)/1000.0)
+                segment.export(target_audio_path, out_ext)  # for soundsegment
+                audio_paths.append(target_audio_path)
+            
+        #    segment = segment[:18000]
+        #    print(len(segment)/1000.0)
+        #    segment.export(target_audio_path, out_ext)    
+        #    audio_paths.append(target_audio_path)
 
         elif seg_duration < 1.0:
             continue
@@ -132,7 +148,6 @@ def split_on_silence_with_pydub(
         else:
             segment.export(target_audio_path, out_ext)  # for soundsegment
             audio_paths.append(target_audio_path)
-
 
     return audio_paths
 
