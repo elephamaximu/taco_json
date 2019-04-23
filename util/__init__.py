@@ -25,22 +25,22 @@ class ValueWindow():
     self._values = []
 
 def parallel_run(fn, items, desc="", parallel=True):
-  results = []
+    results = []
 
-  if parallel:
-    with closing(Pool()) as pool:
-      for out in tqdm(pool.imap_unordered(
-        fn, items), total=len(items), desc=desc):
-        if out is not None:
-          results.append(out)
-  else:
-    for item in tqdm(items, total=len(items), desc=desc):
-      out = fn(item)
-      if out is not None:
-        results.append(out)
-  
-  return results
+    if parallel:
+        with closing(Pool()) as pool:
+            for out in tqdm(pool.imap_unordered(
+                    fn, items), total=len(items), desc=desc):
+                if out is not None:
+                    results.append(out)
+    else:
+        for item in tqdm(items, total=len(items), desc=desc):
+            out = fn(item)
+            if out is not None:
+                results.append(out)
 
-  def add_postfix(path, postfix):
+    return results
+
+def add_postfix(path, postfix):
     path_without_ext, ext = path.rsplit('.', 1)
     return "{}.{}.{}".format(path_without_ext, postfix, ext)
